@@ -6,7 +6,6 @@ import json
 import requests
 import logging
 logging.basicConfig(
-    filename="log.txt",
     level=logging.INFO,
     datefmt="%H:%M:%S",
     format="[%(asctime)s] %(levelname)s - %(message)s",
