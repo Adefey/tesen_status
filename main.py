@@ -40,7 +40,7 @@ def get_time_status(**kwargs):
 
         return f"{hourr} {hour_word} {time_of_day}"
 
-    time_tmp = datetime.now()
+    time_tmp = datetime.now(tz=pytz.timezone('Europe/Moscow'))
     if time_tmp.minute == 0:
         time_res = f"В Москве {get_time_of_day_with_description(time_tmp.hour)}"
     else:
@@ -53,7 +53,7 @@ def get_time_status(**kwargs):
 
 
 def get_year_status(**kwargs):
-    timenow = datetime.now()
+    timenow = datetime.now(tz=pytz.timezone('Europe/Moscow'))
     current_year = timenow.year
     unixtime_now = time.mktime(timenow.timetuple())
     unixtime_year_start = time.mktime(date(current_year, 1, 1).timetuple())
@@ -74,8 +74,8 @@ def get_love_days_status(**kwargs):
                    "🥝", "🍰", "🍯", "🍩", "🍎", "🍏", "🍇", "🍆", "⚾", "🌟", "🎈", "🎄", "🎩", "🎁", "👑", "🎺", "🎻", "👞", "💻", "🔆"]
         return random.choice(emojies)
 
-    love_start_date = datetime(2022, 12, 11, 2, 45, 0)
-    timenow = datetime.now()
+    love_start_date = datetime(2022, 12, 11, 2, 45, 0, 0, pytz.timezone('Europe/Moscow'))
+    timenow = datetime.now(tz=pytz.timezone('Europe/Moscow'))
     passed_time = timenow - love_start_date
     passed_days = passed_time.days
     return f"{get_random_emoji()} {passed_days} дн."
