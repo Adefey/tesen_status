@@ -1,5 +1,4 @@
 import random
-import schedule
 import time
 from datetime import datetime, date, timezone
 import pytz
@@ -146,7 +145,6 @@ def main():
 
 
 if __name__ == "__main__":
-    schedule.every(5).seconds.do(main)
     while 1:
-        schedule.run_pending()
+        main()
         time.sleep(5)
