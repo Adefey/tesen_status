@@ -134,8 +134,8 @@ def get_love_days_status(**kwargs):
 
 def get_motd_status(**kwargs):
     motds = [
-        "Man. Nature. Technology.",
-        "A world not of my making, yet a world of my design.",
+        "Man. Nature. Technology",
+        "A world not of my making, yet a world of my design",
         "God. Demon. Machine.",
         "The cloud is no longer harmful",
         "Fully self-hosted",
@@ -145,6 +145,9 @@ def get_motd_status(**kwargs):
         "Shape your wings into a fist in the face of the sky",
         "They will not surrender and neither will you",
         "Aerial, Aerial",
+        "Broken machinery",
+        "Forged and programmed By Hephaestus",
+        "You can stand under my umbrella",
     ]
     motd = random.choice(motds)
     return motd
