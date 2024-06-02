@@ -11,7 +11,7 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
     format="[%(asctime)s] %(levelname)s - %(message)s",
 )
-CONFIG_PATH = "config.json"
+CONFIG_PATH = "/home/adefe/tesen_status/config.json"
 
 
 def _vkapi_request(method, params, access_token, api_version):
