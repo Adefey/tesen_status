@@ -1,6 +1,6 @@
 import random
 import time
-from datetime import datetime, date, timezone
+from datetime import datetime, date
 import pytz
 import json
 import requests
@@ -11,7 +11,21 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
     format="[%(asctime)s] %(levelname)s - %(message)s",
 )
-CONFIG_PATH = "/home/adefe/tesen_status/config.json"
+CONFIG_PATH = "config.json"
+
+
+def _vkapi_request(method, params, access_token, api_version):
+    params.update({"access_token": access_token, "v": api_version})
+    logging.info(f"Request {method} pending")
+    try:
+        response = requests.get(f"https://api.vk.com/method/{method}", params=params)
+        if response.status_code != 200:
+            raise Exception(f"Response status is {response.status_code}")
+    except Exception as e:
+        logging.error(f"Request {method} error, {e}")
+        return None
+    logging.info(f"Request {method} fulfilled")
+    return response.json()
 
 
 def get_time_status(**kwargs):
@@ -133,24 +147,14 @@ def get_love_days_status(**kwargs):
 
 
 def get_motd_status(**kwargs):
-    motds = [
-        "Man. Nature. Technology",
-        "A world not of my making, yet a world of my design",
-        "God. Demon. Machine.",
-        "The cloud is no longer harmful",
-        "Fully self-hosted",
-        "The world is poison you're the antidote",
-        "Everyday is a wheel of fortune for me",
-        "Unleash the mood swings",
-        "Shape your wings into a fist in the face of the sky",
-        "They will not surrender and neither will you",
-        "Aerial, Aerial",
-        "Broken machinery",
-        "Forged and programmed By Hephaestus",
-        "You can stand under my umbrella",
-    ]
+    motds = kwargs["motds"]
     motd = random.choice(motds)
     return motd
+
+
+def minecraft_server_status(**kwargs):
+    result = f"Server {kwargs['mc_server_name']} on {kwargs['mc_server_ip']}"
+    return result
 
 
 def get_steam_status(**kwargs):
@@ -165,7 +169,7 @@ def get_steam_status(**kwargs):
     if online_status == "Online":
         online_status = "✅ В сети"
     if online_status == "Offline":
-        online_status = "⛔ Оффлайн"
+        online_status = "🚫 Оффлайн"
     if online_status == "In-Game":
         online_status = "🎮 "
         game_name = steam_html_page[
@@ -184,15 +188,45 @@ def get_steam_status(**kwargs):
     return f"Steam: {online_status}"
 
 
-def set_status(token, version, text):
-    params = {"access_token": token, "v": version, "text": text}
+def get_last_message_status(**kwargs):
+    messages_info = _vkapi_request(
+        "messages.getConversations",
+        {
+            "offset": 0,
+            "count": 1,
+            "filter": "all",
+        },
+        kwargs["token"],
+        kwargs["version"],
+    )
     try:
-        response = requests.get(f"https://api.vk.com/method/status.set", params=params)
-    except Exception as e:
-        logging.error(f"{e}")
-        return None
-    logging.info("Request fulfilled")
-    return response.json()
+        last_message = messages_info["response"]["items"][0]["last_message"]
+    except KeyError as exc:
+        raise RuntimeError("Ошибка получения сообщений!") from exc
+
+    last_message_sender_id = last_message["from_id"]
+
+    user_obj = _vkapi_request(
+        "users.get",
+        {"user_ids": [last_message_sender_id]},
+        kwargs["token"],
+        kwargs["version"],
+    )["response"][0]
+
+    last_message_sender_name = f"{user_obj['first_name']} {user_obj['last_name']}"
+    last_message_unix_date = last_message["date"]
+    last_message_date = datetime.fromtimestamp(
+        last_message_unix_date, pytz.timezone("Europe/Moscow")
+    ).strftime("%H:%M")
+
+    return (
+        f"Последнее сообщение отправил: {last_message_sender_name}: {last_message_date}"
+    )
+
+
+def set_status(token, version, text):
+    result = _vkapi_request("status.set", {"text": text}, token, version)
+    return result
 
 
 def main():
@@ -202,18 +236,33 @@ def main():
         "love_days": get_love_days_status,
         "motd": get_motd_status,
         "steam": get_steam_status,
+        "mc_server_status": minecraft_server_status,
+        "last_message_status": get_last_message_status,
     }
     with open(CONFIG_PATH, "r", encoding="UTF-8") as file:
         config = json.load(file)
-    vkapi_version = config["vkapi_version"]
+
     for person in config["persons"]:
-        statuses = [
-            response_scheme[data](name=person["name"])
-            for data in person["display_data"]
-        ]
+        statuses = []
+        for data in person["display_data"]:
+            try:
+                field_status = response_scheme[data](
+                    name=person["name"],
+                    motds=person["motds"],
+                    mc_server_ip=person["mc_server_ip"],
+                    mc_server_name=person["mc_server_name"],
+                    token=person["vk_token"],
+                    version=config["vkapi_version"],
+                )
+                statuses.append(field_status)
+            except Exception as exc:
+                logging.error(f"Error on data={data}, exc={exc}")
+                statuses.append(f"Ошибка в {data}")
+
         status_string = " | ".join(statuses)
         logging.info(f"Made a status for {person['name']}: {status_string}")
         token = person["vk_token"]
+        vkapi_version = config["vkapi_version"]
         response = set_status(token, vkapi_version, status_string)
         logging.info(f"Response: {response}")
 
