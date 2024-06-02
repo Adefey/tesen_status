@@ -206,7 +206,7 @@ def get_last_message_status(**kwargs):
 
     last_message_sender_id = last_message["from_id"]
 
-    try:
+    if last_message_sender_id > 0:
         sender_obj = _vkapi_request(
             "users.get",
             {"user_ids": [last_message_sender_id]},
@@ -218,10 +218,10 @@ def get_last_message_status(**kwargs):
         last_message_sender_name = (
             f"{sender_obj['first_name']} {sender_obj['last_name']}"
         )
-    except IndexError:
+    else:
         sender_obj = _vkapi_request(
             "groups.getById",
-            {"group_ids": [last_message_sender_id]},
+            {"group_ids": [-last_message_sender_id]},
             kwargs["token"],
             kwargs["version"],
         )
