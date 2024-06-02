@@ -212,7 +212,9 @@ def get_last_message_status(**kwargs):
             {"user_ids": [last_message_sender_id]},
             kwargs["token"],
             kwargs["version"],
-        )["response"][0]
+        )
+        print(sender_obj)
+        sender_obj = sender_obj["response"][0]
         last_message_sender_name = (
             f"{sender_obj['first_name']} {sender_obj['last_name']}"
         )
@@ -222,7 +224,9 @@ def get_last_message_status(**kwargs):
             {"group_ids": [last_message_sender_id]},
             kwargs["token"],
             kwargs["version"],
-        )["response"]["groups"][0]
+        )
+        print(sender_obj)
+        sender_obj = sender_obj["response"]["groups"][0]
         last_message_sender_name = f"{sender_obj['name']}"
 
     last_message_unix_date = last_message["date"]
