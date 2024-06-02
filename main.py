@@ -201,19 +201,30 @@ def get_last_message_status(**kwargs):
     )
     try:
         last_message = messages_info["response"]["items"][0]["last_message"]
-    except KeyError as exc:
+    except (KeyError, IndexError) as exc:
         raise RuntimeError("Ошибка получения сообщений!") from exc
 
     last_message_sender_id = last_message["from_id"]
 
-    user_obj = _vkapi_request(
-        "users.get",
-        {"user_ids": [last_message_sender_id]},
-        kwargs["token"],
-        kwargs["version"],
-    )["response"][0]
+    try:
+        sender_obj = _vkapi_request(
+            "users.get",
+            {"user_ids": [last_message_sender_id]},
+            kwargs["token"],
+            kwargs["version"],
+        )["response"][0]
+        last_message_sender_name = (
+            f"{sender_obj['first_name']} {sender_obj['last_name']}"
+        )
+    except IndexError:
+        sender_obj = _vkapi_request(
+            "groups.getById",
+            {"group_ids": [last_message_sender_id]},
+            kwargs["token"],
+            kwargs["version"],
+        )["response"]["groups"][0]
+        last_message_sender_name = f"{sender_obj['name']}"
 
-    last_message_sender_name = f"{user_obj['first_name']} {user_obj['last_name']}"
     last_message_unix_date = last_message["date"]
     last_message_date = datetime.fromtimestamp(
         last_message_unix_date, pytz.timezone("Europe/Moscow")
